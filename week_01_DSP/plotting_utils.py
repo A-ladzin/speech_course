@@ -1,3 +1,4 @@
+import scipy.signal
 import librosa
 import numpy as np
 import scipy

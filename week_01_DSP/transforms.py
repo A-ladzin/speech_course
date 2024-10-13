@@ -22,22 +22,24 @@ class Windowing:
         self.hop_length = hop_length if hop_length else self.window_size // 2
     
     def __call__(self, waveform):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        windows = []
+        waveform = np.pad(waveform, ((self.window_size)//2,(self.window_size)//2))
+        for i in range(0,len(waveform)-self.window_size+1,self.hop_length):
+            windows.append(waveform[i:i+self.window_size])
 
-        return windows
+        return np.array(windows)
     
 
 class Hann:
     def __init__(self, window_size=1024):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        self.hann = scipy.signal.windows.hann(window_size,sym=False)
         # ^^^^^^^^^^^^^^
 
     
     def __call__(self, windows):
         # Your code here
+        return self.hann*windows
         raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
@@ -49,9 +51,13 @@ class DFT:
 
     def __call__(self, windows):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
+        dft = np.fft.rfft(windows)
+        if self.n_freqs is not None:
+            dft = dft[:,:self.n_freqs]
+        spec = np.abs(dft)
         return spec
 
 
@@ -63,20 +69,23 @@ class Square:
 class Mel:
     def __init__(self, n_fft, n_mels=80, sample_rate=22050):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        self.mel = librosa.filters.mel(sr = sample_rate,n_fft = n_fft,n_mels = n_mels)
+        self.inverse_mel = np.linalg.pinv(self.mel)
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, spec):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        mel = spec@self.mel.T
         # ^^^^^^^^^^^^^^
-
+        
         return mel
 
     def restore(self, mel):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        spec = mel@self.inverse_mel.T
+        
+
         # ^^^^^^^^^^^^^^
 
         return spec
@@ -134,13 +143,17 @@ class Wav2Mel:
 class PitchUp:
     def __init__(self, num_mels_up):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        self.num_mels_up = num_mels_up
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, mel):
+        pad = np.zeros(mel[:,:self.num_mels_up].shape)
+        mel = np.hstack((pad,mel[:,:-self.num_mels_up]))
+        return mel
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
@@ -148,41 +161,49 @@ class PitchUp:
 class PitchDown:
     def __init__(self, num_mels_down):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+
+        self.num_mels_up = num_mels_down
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, mel):
+
+        pad = np.zeros(mel[:,:self.num_mels_up].shape)
+        mel = np.hstack((mel[:,self.num_mels_up:],pad))
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        return mel
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
-
+import torch
 class SpeedUpDown:
     def __init__(self, speed_up_factor=1.0):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        self.speed_up_factor = speed_up_factor
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, mel):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        return np.array(torch.adaptive_avg_pool1d(torch.Tensor(mel.T),int(mel.shape[0]*self.speed_up_factor))).T
         # ^^^^^^^^^^^^^^
 
 
 
 class Loudness:
     def __init__(self, loudness_factor):
+        self.loudness_factor = loudness_factor
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, mel):
+        return mel*self.loudness_factor
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
@@ -190,7 +211,7 @@ class Loudness:
 class TimeReverse:
     def __call__(self, mel):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        return mel[::-1,:]
         # ^^^^^^^^^^^^^^
 
 
@@ -198,7 +219,8 @@ class TimeReverse:
 class VerticalSwap:
     def __call__(self, mel):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        return mel[:,::-1]
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
@@ -206,13 +228,20 @@ class VerticalSwap:
 class WeakFrequenciesRemoval:
     def __init__(self, quantile=0.05):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        self.quantile = quantile
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, mel):
+        mel = mel.copy()
+        perc = np.percentile(mel,self.quantile*100)
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        for i in range(mel.shape[0]):
+            idc = mel[i][np.where(mel[i] <perc)]
+            mel[i][np.where(mel[i] <perc)] = 0
+
+
+        return mel
         # ^^^^^^^^^^^^^^
 
 
@@ -220,13 +249,18 @@ class WeakFrequenciesRemoval:
 class Cringe1:
     def __init__(self):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        pass
         # ^^^^^^^^^^^^^^
 
 
     def __call__(self, mel):
+
+        mel1=mel.copy()
+        mel1[0::2] = mel[::-2]
+
+        return mel1
         # Your code here
-        raise NotImplementedError("TODO: assignment")
+        # raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
 
 
@@ -234,11 +268,13 @@ class Cringe1:
 class Cringe2:
     def __init__(self):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
         # ^^^^^^^^^^^^^^
+        pass
 
 
     def __call__(self, mel):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        mel1=mel.copy()
+        mel1[1::2] = mel[::-2][1:]
+
+        return mel1

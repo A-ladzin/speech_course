@@ -95,10 +95,8 @@ def test_hann(testing_class=Hann):
     for idx in range(num_test_samples):
         pickle_path = test_samples_path / "hann" / f"{idx:02}.pkl"
         inp, trg, window_size, n_frames = pickle.load(pickle_path.open("rb"))
-
         transform = testing_class(window_size=window_size)
         result = transform(inp)
-
         if not np.allclose(result, trg):
             msg = f"Didn't work for noise sample number {idx}.\n" \
                   f"Input of shape {inp.shape} expected result of shape {trg.shape}.\n" \
